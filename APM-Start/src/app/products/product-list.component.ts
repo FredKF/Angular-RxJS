@@ -1,7 +1,8 @@
 import { ChangeDetectionStrategy, Component, OnInit } from '@angular/core';
-import { catchError, EMPTY } from 'rxjs';
+import { BehaviorSubject, catchError, combineLatest, EMPTY, filter, map, startWith, Subject } from 'rxjs';
 
 import { ProductCategory } from '../product-categories/product-category';
+import { ProductCategoryService } from '../product-categories/product-category.service';
 
 import { ProductService } from './product.service';
 
@@ -14,18 +15,64 @@ export class ProductListComponent {
   pageTitle = 'Product List';
   errorMessage = '';
   categories: ProductCategory[] = [];
+  
+  
+  // selectedCategoryId = 1;
+
+  //startwith(0) --> for initial value
+
+  private categorySelectedSubject = new BehaviorSubject<number>(0);
+  categorySelectedAction$ = this.categorySelectedSubject.asObservable(); //exposing the subjects observable
 
   //products: Product[] = [];
   //Declarative data retrieval pattern
-  products$=this.productService.products$.pipe(
+  // products$=this.productService.products$.pipe(
+  //   catchError(err => {
+  //     this.errorMessage = err;
+  //     return EMPTY;//return an empty Observable
+  //   })
+  // );//undefined so it doesn't need to be initialized
+  
+  // products$ = this.productService.productsWithCategory$.pipe(
+  //     catchError(err => {
+  //       this.errorMessage = err;
+  //       return EMPTY;
+  //     })
+  // );
+
+  products$ = combineLatest([
+    this.productService.productsWithCategory$,
+    //two ways to set an initial value startWith or BehaviorSubject
+    // this.categorySelectedAction$.pipe(
+    //   startWith(0)
+    // )
+        this.categorySelectedAction$
+    
+    
+  ]).pipe(
+    map(([products , selectedCategoryId ]) => //deestructure arrays assigns variables to the arrays
+      products.filter(product => 
+        selectedCategoryId ? product.categoryId === selectedCategoryId : true
+      )),
+        catchError(err => {
+          this.errorMessage = err;
+          return EMPTY;//return an empty Observable
+        })               
+  );
+
+  categories$ = this.productCategoryService.productCategories$.pipe(
     catchError(err => {
       this.errorMessage = err;
-      return EMPTY;//return an empty Observable
+      return EMPTY;
     })
-  );//undefined so it doesn't need to be initialized
-  
+);
 
-  constructor(private productService: ProductService) { }
+  // productsSimpleFilter$= this.productService.productsWithCategory$.pipe(
+  //   map(products => 
+  //       products.filter(p => this.selectedCategoryId ? p.categoryId  === this.selectedCategoryId : true))
+  // );
+
+  constructor(private productService: ProductService, private productCategoryService: ProductCategoryService) { }
 
     //Procedural data retrieval pattern
     // this.sub = this.productService.getProducts()
@@ -42,9 +89,6 @@ export class ProductListComponent {
     //   })
     // );
 
-    
-   
-
     //error strategy
     // this.products$ = this.productService.getProducts().subscribe({
     //   next: products => this.products = products,
@@ -57,6 +101,7 @@ export class ProductListComponent {
   }
 
   onSelected(categoryId: string): void {
-    console.log('Not yet implemented');
+    // this.selectedCategoryId = +categoryId;
+    this.categorySelectedSubject.next(+categoryId);
   }
 }
