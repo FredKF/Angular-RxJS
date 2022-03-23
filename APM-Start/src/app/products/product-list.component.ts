@@ -41,12 +41,13 @@ export class ProductListComponent {
   // );
 
   products$ = combineLatest([
-    this.productService.productsWithCategory$,
+    // this.productService.productsWithCategory$,
+    this.productService.productsWithAdd$,
     //two ways to set an initial value startWith or BehaviorSubject
     // this.categorySelectedAction$.pipe(
     //   startWith(0)
     // )
-        this.categorySelectedAction$
+    this.categorySelectedAction$
     
     
   ]).pipe(
@@ -97,7 +98,7 @@ export class ProductListComponent {
     
 
   onAdd(): void {
-    console.log('Not yet implemented');
+    this.productService.addProduct();//with no parameter the method uses de fakeProduct 
   }
 
   onSelected(categoryId: string): void {
